@@ -24,10 +24,12 @@ app.use(session({
 }));
 
 // express routes
+// handle request to root path and render index view
 app.get('/', (req, res) => {
   res.render('index');
 });
 
+// handle login form submission and redirect to chat page if username is valid
 app.post('/login', (req, res) => {
   const { username } = req.body;
 
@@ -37,6 +39,7 @@ app.post('/login', (req, res) => {
   res.redirect('/chat');
 });
 
+// handle request to chat page and render chat view with username from session
 app.get('/chat', (req, res) => {
   if (!req.session.username) return res.redirect('/');
   res.render('chat', { username: req.session.username });
