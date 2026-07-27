@@ -3,6 +3,9 @@ const express = require('express');
 const session = require('express-session');
 const { createServer } = require('node:http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+
+const Message = require('./DB_Schema/chatroomSchema.js');
 
 // set the port number for the server to listen on
 const port = 3001;
@@ -22,6 +25,17 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+
+// connect to the MongoDB database using mongoose and log the connection status
+async function connectToDatabase() {
+  try {
+    mongoose.set('strictQuery', true);
+    await mongoose.connect(process.env.MONGODB_URI, {});
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+  }
+}
 
 // express routes
 // handle request to root path and render index view
@@ -53,14 +67,24 @@ io.on('connection', (socket) => {
     console.log(`A user disconnected: ${socket.id}`);
   });
   // chat message event handler
-  socket.on('chatmessage', (msgData) => {
-    console.log(`Message received: ${msgData.message} from ${msgData.username}`);
+  socket.on('chatmessage', async (msgData) => {
+    // create a new message document using the chatroom schema and save it to the database
+    const newMessage = new Message({
+      username: msgData.username,
+      message: msgData.message
+    });
+    await newMessage.save();
+    // emit the chat message to all connected clients
     io.emit('chatmessage', msgData);
   });
 });
 
 
-// start the server and log the port number being used
-server.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
-});
+(async () => {
+  // connect to the database before starting the server
+  await connectToDatabase();
+  // start the server and log the port number being used
+  server.listen(port, () => {
+      console.log(`Server is running on port: ${port}`);
+  });
+})();
