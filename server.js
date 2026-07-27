@@ -53,6 +53,22 @@ app.post('/login', (req, res) => {
   res.redirect('/chat');
 });
 
+app.get('/messages', async (req, res) => {
+  const beforeDate = req.query.before;
+  const limit = 30; // number of messages to fetch
+
+  let query = {};
+
+  if (beforeDate) {
+    query.createdAt = { $lt: new Date(beforeDate) };
+  }
+
+  const messages = await Message.find(query)
+    .sort({ createdAt: 1 })
+    .limit(limit);
+  res.json(messages);
+});
+
 // handle request to chat page and render chat view with username from session
 app.get('/chat', (req, res) => {
   if (!req.session.username) return res.redirect('/');
@@ -79,7 +95,7 @@ io.on('connection', (socket) => {
   });
 });
 
-
+// immediately invoked async function to connect to the database and start the server in that order
 (async () => {
   // connect to the database before starting the server
   await connectToDatabase();
