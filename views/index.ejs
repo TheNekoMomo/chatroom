@@ -1,23 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-  
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Momo.scot Chatroom</title>
-  <link rel="stylesheet" href="style.css">
 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momo.scot Chatroom</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <form>
-    <input type="text" id="messageInput" placeholder="Type your message here..." required>
-    <button type="submit" id="sendButton">Send</button>
-  </form>
-  <ul id="messages"></ul>
+    <form action="/login" method="post">
+        <input type="text" name="username" placeholder="Enter your username" required>
+        <button type="submit">Join Chat</button>
+    </form>
 </body>
-
-<script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
-<script src="app.js"></script>
 
 </html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Momo.scot Chatroom : <%= username %></title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <form>
+    <input type="text" id="messageInput" placeholder="Type your message here..." required>
+    <button type="submit" id="sendButton">Send</button>
+  </form>
+  <ul id="messages"></ul>
+</body>
+
+<script>
+  window.currentUser = "<%= username %>";
+</script>
+<script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+<script src="app.js"></script>
+
+</html>
