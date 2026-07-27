@@ -1,5 +1,10 @@
 // get the socket.io client instance
-const socket = io();
+const socket = io({ transports: ['websocket', 'polling'] });
+
+// log socket connection status for debugging
+socket.on('connect', () => console.log('Socket connected:', socket.id));
+socket.on('connect_error', (err) => console.error('Socket connect error:', err));
+socket.on('error', (err) => console.error('Socket error:', err));
 
 // Get Needed parts of the HTML page
 const messagesList = document.getElementById('messages');

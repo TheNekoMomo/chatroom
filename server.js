@@ -78,20 +78,27 @@ app.get('/chat', (req, res) => {
 // socket.io connection and event handling
 io.on('connection', (socket) => {
   console.log(`A user connected: ${socket.id}`);
+  socket.emit('welcome', { message: 'Welcome to the chat room', socketId: socket.id });
+
   // disconnect event handler
   socket.on('disconnect', () => {
     console.log(`A user disconnected: ${socket.id}`);
   });
+
   // chat message event handler
   socket.on('chatmessage', async (msgData) => {
-    // create a new message document using the chatroom schema and save it to the database
-    const newMessage = new Message({
-      username: msgData.username,
-      message: msgData.message
-    });
-    await newMessage.save();
-    // emit the chat message to all connected clients
-    io.emit('chatmessage', msgData);
+    console.log('Received chatmessage:', msgData);
+    try {
+      const newMessage = new Message({
+        username: msgData.username,
+        message: msgData.message
+      });
+      await newMessage.save();
+      io.emit('chatmessage', msgData);
+    } catch (error) {
+      console.error('Error saving message:', error);
+      socket.emit('chaterror', { error: 'Unable to save message' });
+    }
   });
 });
 
