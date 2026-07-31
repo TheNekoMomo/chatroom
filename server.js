@@ -48,8 +48,11 @@ app.post('/login', (req, res) => {
   const { username } = req.body;
 
   if (!username) return res.redirect('/');
+  const trimmedUsername = username.trim();
+  if (trimmedUsername.length === 0) return res.redirect('/');
+  if (!checkUserInput(trimmedUsername, 10)) return res.redirect('/');
 
-  req.session.username = username;
+  req.session.username = trimmedUsername;
   res.redirect('/chat');
 });
 
@@ -77,30 +80,38 @@ app.get('/chat', (req, res) => {
 
 // socket.io connection and event handling
 io.on('connection', (socket) => {
-  console.log(`A user connected: ${socket.id}`);
   socket.emit('welcome', { message: 'Welcome to the chat room', socketId: socket.id });
-
-  // disconnect event handler
-  socket.on('disconnect', () => {
-    console.log(`A user disconnected: ${socket.id}`);
-  });
 
   // chat message event handler
   socket.on('chatmessage', async (msgData) => {
-    console.log('Received chatmessage:', msgData);
+    const username = msgData.username.trim();
+    const message = msgData.message.trim();
+    if (!username || !message) {
+      socket.emit('chaterror', { error: 'Username and message are required' });
+      return;
+    }
+    if (!checkUserInput(username, 10) || !checkUserInput(message, 200)) {
+      socket.emit('chaterror', { error: 'Invalid input' });
+      return;
+    }
     try {
       const newMessage = new Message({
-        username: msgData.username,
-        message: msgData.message
+        username: username,
+        message: message
       });
       await newMessage.save();
-      io.emit('chatmessage', msgData);
+      io.emit('chatmessage', { username: username, message: message });
     } catch (error) {
       console.error('Error saving message:', error);
       socket.emit('chaterror', { error: 'Unable to save message' });
     }
   });
 });
+
+function checkUserInput(stringInput, maxLength) {
+  const pattern = new RegExp(`^[a-zA-Z0-9 ]{1,${maxLength}}$`);
+  return pattern.test(stringInput);
+}
 
 // immediately invoked async function to connect to the database and start the server in that order
 (async () => {
