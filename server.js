@@ -16,6 +16,10 @@ const io = new Server(server, {
   connectionStateRecovery: {}
 });
 
+const messageRateLimit = 5; // number of messages allowed per window
+const messageRateLimitWindowMs = 5000; // time window in milliseconds (5 seconds)
+const messageRateLimitMap = new Map(); // map to store rate limit data for each user
+
 // set up express app with ejs view engine, static files, and session management
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -45,6 +49,10 @@ app.get('/', (req, res) => {
 
 // handle login form submission and redirect to chat page if username is valid
 app.post('/login', (req, res) => {
+  const clientIp = req.headers['cf-connecting-ip'] || req.socket.remoteAddress;
+  if (isRatelimited(clientIp, 1, 3000)) { // limit to 1 login attempts per 3 second
+    return res.status(429).send('Rate limit exceeded. Please wait before trying again.');
+  }
   const { username } = req.body;
 
   if (!username) return res.redirect('/');
@@ -84,6 +92,13 @@ io.on('connection', (socket) => {
 
   // chat message event handler
   socket.on('chatmessage', async (msgData) => {
+
+    const clientIp = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.address;
+    if (isRatelimited(clientIp, messageRateLimit, messageRateLimitWindowMs)) {
+      socket.emit('chaterror', { error: 'Rate limit exceeded. Please wait before sending more messages.' });
+      return;
+    }
+
     const username = msgData.username.trim();
     const message = msgData.message.trim();
     if (!username || !message) {
@@ -111,6 +126,23 @@ io.on('connection', (socket) => {
 function checkUserInput(stringInput, maxLength) {
   const pattern = new RegExp(`^[a-zA-Z0-9 ]{1,${maxLength}}$`);
   return pattern.test(stringInput);
+}
+
+function isRatelimited(key, limit, windowMs) {
+  const now = Date.now();
+  const entry = messageRateLimitMap.get(key);
+
+  if (!entry || now > entry.resetTime) {
+    messageRateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return false; // not rate limited
+  }
+
+  if (entry.count >= limit) {
+    return true; // rate limited
+  }
+
+  entry.count++;
+  return false; // not rate limited
 }
 
 // immediately invoked async function to connect to the database and start the server in that order
