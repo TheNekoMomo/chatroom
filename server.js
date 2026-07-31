@@ -77,7 +77,13 @@ app.get('/messages', async (req, res) => {
   const messages = await Message.find(query)
     .sort({ createdAt: 1 })
     .limit(limit);
-  res.json(messages);
+
+  const formattedMessages = messages.map(msg => ({
+    username: msg.username,
+    message: msg.message,
+    createdAt: msg.createdAt
+  }));
+  res.json(formattedMessages);
 });
 
 // handle request to chat page and render chat view with username from session
